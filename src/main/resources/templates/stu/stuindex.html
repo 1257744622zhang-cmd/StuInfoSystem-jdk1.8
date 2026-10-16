@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<!-- saved from url=(0052)http://getbootstrap.com/docs/4.0/examples/dashboard/ -->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>学生成绩信息管理系统</title>
+    <!-- Bootstrap core CSS -->
+    <link href="asserts/css/bootstrap.min.css" th:href="@{/webjars/bootstrap/4.0.0/css/bootstrap.css}" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom styles for this template -->
+    <link href="asserts/css/dashboard.css" th:href="@{/asserts/css/dashboard.css}" rel="stylesheet">
+    <style type="text/css">
+        /* Chart.js */
+        @-webkit-keyframes chartjs-render-animation {
+            from { opacity: 0.99 }
+            to { opacity: 1 }
+        }
+        @keyframes chartjs-render-animation {
+            from { opacity: 0.99 }
+            to { opacity: 1 }
+        }
+        .chartjs-render-monitor {
+            -webkit-animation: chartjs-render-animation 0.001s;
+            animation: chartjs-render-animation 0.001s;
+        }
+
+        .grade-chart-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .welcome-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+<!--引入抽取的topbar-->
+<div th:replace="commons/stubar::topbar"></div>
+
+<div class="container-fluid">
+    <div class="row">
+        <!--引入侧边栏-->
+        <div th:replace="commons/stubar::#sidebar(activeUri='index')"></div>
+
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
+            <!-- 欢迎信息 -->
+            <div class="welcome-section">
+                <h1 class="display-4">欢迎回来，[[${session.loginUser}]]</h1>
+                <p class="lead">以下是您的个人成绩统计</p>
+            </div>
+
+            <!-- 成绩图表容器 -->
+            <div class="grade-chart-container">
+                <h4>各科目成绩分布</h4>
+                <canvas id="gradeChart" width="400" height="200"></canvas>
+            </div>
+
+
+        </main>
+    </div>
+</div>
+
+<script>
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取成绩数据
+        fetch('/stu/getGradeChartData')
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    renderGradeChart(data);
+                    renderTermComparisonChart(data);
+                } else {
+                    document.getElementById('gradeChart').parentElement.innerHTML =
+                        '<p class="text-muted">暂无成绩数据</p>';
+                    document.getElementById('termComparisonChart').parentElement.innerHTML =
+                        '<p class="text-muted">暂无成绩数据</p>';
+                }
+            })
+            .catch(error => {
+                console.error('获取成绩数据失败:', error);
+            });
+    });
+
+    // 渲染科目成绩柱状图
+    function renderGradeChart(data) {
+        const subjects = [...new Set(data.map(item => item.subject))];
+        const grades = subjects.map(subject => {
+            const subjectData = data.find(item => item.subject === subject);
+            return subjectData ? subjectData.grade : 0;
+        });
+
+        const ctx = document.getElementById('gradeChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: subjects,
+                datasets: [{
+                    label: '成绩',
+                    data: grades,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: '成绩'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '科目'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+</script>
+</body>
+</html>

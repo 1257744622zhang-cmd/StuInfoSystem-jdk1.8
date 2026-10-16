@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<!-- saved from url=(0052)http://getbootstrap.com/docs/4.0/examples/dashboard/ -->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>学生成绩修改</title>
+    <!-- Bootstrap core CSS -->
+    <link href="asserts/css/bootstrap.min.css" th:href="@{/webjars/bootstrap/4.0.0/css/bootstrap.css}" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="asserts/css/dashboard.css" th:href="@{/asserts/css/dashboard.css}" rel="stylesheet">
+    <style type="text/css">
+        /* Chart.js */
+        @-webkit-keyframes chartjs-render-animation {
+            from { opacity: 0.99 }
+            to { opacity: 1 }
+        }
+        @keyframes chartjs-render-animation {
+            from { opacity: 0.99 }
+            to { opacity: 1 }
+        }
+        .chartjs-render-monitor {
+            -webkit-animation: chartjs-render-animation 0.001s;
+            animation: chartjs-render-animation 0.001s;
+        }
+
+        /* 自定义样式 */
+        .error-message {
+            color: #dc3545;
+            font-size: 80%;
+            margin-top: 0.25rem;
+        }
+        .is-invalid {
+            border-color: #dc3545;
+        }
+    </style>
+</head>
+
+<body>
+<!--引入抽取的topbar-->
+<!--模板名：会使用thymeleaf的前后缀配置规则进行解析-->
+<div th:replace="commons/teabar::topbar"></div>
+
+<div class="container-fluid">
+    <div class="row">
+        <!--引入侧边栏-->
+        <div th:replace="commons/teabar::#sidebar(activeUri='result')"></div>
+
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
+            <form id="resultForm" th:action="@{/tea/resbyid}" method="post" onsubmit="return validateForm()">
+                <!--提示框 -->
+                <div class="alert alert-danger" role="alert" th:if="${errors!=null}">
+                    <div th:each="error:${errors}" th:text="${error.msg}"></div>
+                </div>
+                <input type="hidden" name="_method" value="put" />
+                <input type="hidden" name="resId" th:value="${resId}" />
+
+                <div class="form-group">
+                    <label>学号</label>
+                    <input name="stuId" id="stuId" type="text" class="form-control" placeholder="请输入学号"
+                           th:value="${res!=null}?${res.stuId}" oninput="validateStuId()">
+                    <div class="error-message" id="stuIdError"></div>
+                </div>
+                <div class="form-group">
+                    <label>课程名</label>
+                    <select name="subName" id="subName" class="form-control" onchange="validateSubName()">
+                        <option value="">请选择课程</option>
+                        <option th:each="subject : ${subjects}"
+                                th:value="${subject.subName}"
+                                th:text="${subject.subName}"
+                                th:selected="${res!=null} and ${res.subName} == ${subject.subName}">
+                        </option>
+                    </select>
+                    <div class="error-message" id="subNameError"></div>
+                </div>
+                <div class="form-group">
+                    <label>成绩</label>
+                    <input name="resNum" id="resNum" type="number" class="form-control" placeholder="请输入成绩(0-100)"
+                           th:value="${res!=null}?${res.resNum}" min="0" max="100" step="0.1" oninput="validateResNum()">
+                    <div class="error-message" id="resNumError"></div>
+                </div>
+                <div class="form-group">
+                    <label>学期 <small class="text-muted">(格式: xx-xxxx-x, 例如: 22-2023-1)</small></label>
+                    <input name="resTerm" id="resTerm" type="text" class="form-control" placeholder="请输入学期，格式: xx-xxxx-x"
+                           th:value="${res!=null}?${res.resTerm}" oninput="validateTermFormat()">
+                    <div class="error-message" id="termError"></div>
+                </div>
+                <button type="submit" class="btn btn-primary">修改</button>
+            </form>
+        </main>
+    </div>
+</div>
+
+<!-- Bootstrap core JavaScript -->
+<script type="text/javascript" src="asserts/js/jquery-3.2.1.slim.min.js" th:src="@{/webjars/jquery/3.3.1/jquery.js}"></script>
+<script type="text/javascript" src="asserts/js/popper.min.js" th:src="@{/webjars/popper.js/1.11.1/dist/popper.js}"></script>
+<script type="text/javascript" src="asserts/js/bootstrap.min.js" th:src="@{/webjars/bootstrap/4.0.0/js/bootstrap.js}"></script>
+
+<!-- Icons -->
+<script type="text/javascript" src="asserts/js/feather.min.js" th:src="@{/asserts/js/feather.min.js}"></script>
+<script>
+    feather.replace();
+
+    // 验证学号格式
+    function validateStuId() {
+        const stuIdInput = document.getElementById('stuId');
+        const errorElement = document.getElementById('stuIdError');
+
+        if (!stuIdInput.value.trim()) {
+            stuIdInput.classList.add('is-invalid');
+            errorElement.textContent = '学号不能为空';
+            return false;
+        } else if (!/^\d+$/.test(stuIdInput.value)) {
+            stuIdInput.classList.add('is-invalid');
+            errorElement.textContent = '学号必须为数字';
+            return false;
+        } else {
+            stuIdInput.classList.remove('is-invalid');
+            errorElement.textContent = '';
+            return true;
+        }
+    }
+
+    // 验证课程名格式
+    // function validateSubName() {
+    //     const subNameInput = document.getElementById('subName');
+    //     const errorElement = document.getElementById('subNameError');
+    //
+    //     if (!subNameInput.value.trim()) {
+    //         subNameInput.classList.add('is-invalid');
+    //         errorElement.textContent = '课程名不能为空';
+    //         return false;
+    //     } else {
+    //         subNameInput.classList.remove('is-invalid');
+    //         errorElement.textContent = '';
+    //         return true;
+    //     }
+    // }
+
+    // 验证成绩范围
+    function validateResNum() {
+        const resNumInput = document.getElementById('resNum');
+        const errorElement = document.getElementById('resNumError');
+        const score = parseFloat(resNumInput.value);
+
+        if (resNumInput.value.trim() === '') {
+            resNumInput.classList.add('is-invalid');
+            errorElement.textContent = '成绩不能为空';
+            return false;
+        } else if (isNaN(score)) {
+            resNumInput.classList.add('is-invalid');
+            errorElement.textContent = '成绩必须为数字';
+            return false;
+        } else if (score < 0 || score > 100) {
+            resNumInput.classList.add('is-invalid');
+            errorElement.textContent = '成绩必须在0-100之间';
+            return false;
+        } else {
+            resNumInput.classList.remove('is-invalid');
+            errorElement.textContent = '';
+            return true;
+        }
+    }
+
+    // 验证学期格式
+    function validateTermFormat() {
+        const termInput = document.getElementById('resTerm');
+        const errorElement = document.getElementById('termError');
+        const termPattern = /^\d{2}-\d{4}-\d{1}$/;
+
+        if (!termInput.value.trim()) {
+            termInput.classList.add('is-invalid');
+            errorElement.textContent = '学期不能为空';
+            return false;
+        } else if (!termPattern.test(termInput.value)) {
+            termInput.classList.add('is-invalid');
+            errorElement.textContent = '学期格式应为"年级-年份-学期"，例如: 22-2023-1';
+            return false;
+        } else {
+            termInput.classList.remove('is-invalid');
+            errorElement.textContent = '';
+            return true;
+        }
+    }
+
+    // 表单提交验证
+    function validateForm() {
+        const isStuIdValid = validateStuId();
+        const isSubNameValid = validateSubName();
+        const isResNumValid = validateResNum();
+        const isTermValid = validateTermFormat();
+
+        return isStuIdValid && isSubNameValid && isResNumValid && isTermValid;
+    }
+</script>
+</body>
+</html>
